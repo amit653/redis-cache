@@ -1,5 +1,5 @@
 # redis caching for postgres table
-
+```
 --populate postgres and redis indexing for recent record inserted in postgres
 python populate_postgres.py
 Postgres row: 10000
@@ -33,6 +33,8 @@ Cache miss, querying Postgres...
 User: {'id': 10000, 'name': 'test', 'age': 20, 'city': 'delhi'}
 
 -- Now subsequent run will again hit redis cache until the TTL time 20 secs expires
- python .\get_user.py              
+ python .\get_user.py     
+ ```
 Cache hit!
 User: {'name': 'test', 'age': '20', 'city': 'delhi'}
+``
