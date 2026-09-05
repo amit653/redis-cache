@@ -1,0 +1,90 @@
+root@b09ad7dea423:/data# redis-cli --scan --pattern "user:*"
+"user:1000000"
+"user:b'9'"
+"user:100000"
+root@b09ad7dea423:/data# redis-cli --scan --pattern "user_index:*"
+"user_index:Amit"
+"user_index:test"
+
+127.0.0.1:6379> HSET user:1 name "Amit" age "30" city "delhi"
+(integer) 3
+127.0.0.1:6379> HGETALL user:1
+1) "name"
+2) "Amit"
+3) "age"
+4) "30"
+5) "city"
+6) "delhi"
+127.0.0.1:6379> HGET user:1 name
+"Amit"
+
+127.0.0.1:6379> HMGET user:1 name age
+1) "Amit"
+2) "30"
+
+127.0.0.1:6379> HKEYS user:1
+1) "name"
+2) "age"
+3) "city"
+127.0.0.1:6379> HVALS user:1
+1) "Amit"
+2) "30"
+3) "delhi"
+
+ cat /proc/1/cmdline
+redis-server *:6379
+
+root@b09ad7dea423:/data#  redis-cli CONFIG GET save
+1) "save"
+2) "3600 1 300 100 60 10000"
+root@b09ad7dea423:/data#  redis-cli CONFIG GET appendonly
+1) "appendonly"
+2) "no"
+root@b09ad7dea423:/data#  redis-cli CONFIG GET dir
+1) "dir"
+2) "/data"
+
+Enable AOF Persistence (on the fly)
+root@b09ad7dea423:/data# redis-cli CONFIG SET appendonly yes
+OK
+root@b09ad7dea423:/data# redis-cli CONFIG REWRITE
+(error) ERR The server is running without a config file
+
+appendonly yes → turns on AOF logging immediately.
+CONFIG REWRITE → writes the new setting into a generated config file so it persists across restarts.
+After enabling, Redis will create appendonly.aof in /data.
+root@b09ad7dea423:/data# ls
+appendonlydir  dump.rdb
+
+--in redis.conf
+# RDB snapshotting
+save 900 1     # save after 1 change in 900 seconds
+save 300 10    # save after 10 changes in 300 seconds
+save 60 10000  # save after 10000 changes in 60 seconds
+
+# AOF logging
+appendonly yes
+appendfsync everysec
+
+-- redis layout
+user:1 hash with 3 fields:
+[user:1] → Hash object
+   └─ listpack:
+       "name" → "Amit"
+       "age"  → "30"
+       "city" → "delhi"
+
+for hundred of fields,redis would switch to dict encoding
+[user:1] → Hash object
+   └─ dict:
+       { "name":"Amit", "age":"30", "city":"delhi", ... }
+
+BULK delete
+redis-cli --scan --pattern "user:*" | xargs redis-cli DEL
+
+check indexes for each row
+127.0.0.1:6379> KEYS user_index:*
+1) "user_index:Amit"
+2) "user_index:test"
+127.0.0.1:6379> GET user_index:test
+"10000"
